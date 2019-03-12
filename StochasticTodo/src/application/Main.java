@@ -4,17 +4,24 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import javafx.application.Application;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
+import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TextField;
+import javafx.scene.control.cell.CheckBoxListCell;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import javafx.util.Callback;
 
 public class Main extends Application {
 
@@ -39,6 +46,19 @@ public class Main extends Application {
 		ObservableList<String> names = FXCollections.observableArrayList(
 		          "Julia", "Ian", "Sue", "Matthew", "Hannah", "Stephan", "Denise");
 		ListView<String> listView = new ListView<String>(names);	
+		listView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+		// Used this to help: https://stackoverflow.com/questions/28843858/javafx-8-listview-with-checkboxes
+		listView.setCellFactory(CheckBoxListCell.forListView(new Callback<String, ObservableValue<Boolean>>() {
+			@Override
+			public ObservableValue<Boolean> call(String item) {
+				BooleanProperty observable = new SimpleBooleanProperty();
+                observable.addListener((obs, wasSelected, isNowSelected) -> 
+                System.out.println(1)
+            );
+				return observable;
+			}
+		}));
+		
 		
 		Button button1 = new Button("Settings");
 		button1.setOnAction(e -> primaryStage.setScene(settingsScene));
