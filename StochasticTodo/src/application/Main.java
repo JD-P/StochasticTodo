@@ -11,14 +11,19 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.SelectionMode;
+import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.control.ToggleButton;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.cell.CheckBoxListCell;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Callback;
@@ -39,31 +44,66 @@ public class Main extends Application {
 		// TODO Auto-generated method stub
 	try { 
 		primaryStage.setTitle("Stochastic ToDo List");
-		//Set up Scene 1
-		ArrayList<String> testStrings = new ArrayList<String>();
-		String[] tempStrings = {"Test1","Test2","Test3","Test4","Test5","Test6"};
-		testStrings.addAll(Arrays.asList(tempStrings));
-		ObservableList<String> names = FXCollections.observableArrayList(
-		          "Julia", "Ian", "Sue", "Matthew", "Hannah", "Stephan", "Denise");
-		ListView<String> listView = new ListView<String>(names);	
-		listView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
-		// Used this to help: https://stackoverflow.com/questions/28843858/javafx-8-listview-with-checkboxes
-		listView.setCellFactory(CheckBoxListCell.forListView(new Callback<String, ObservableValue<Boolean>>() {
-			@Override
-			public ObservableValue<Boolean> call(String item) {
-				BooleanProperty observable = new SimpleBooleanProperty();
-                observable.addListener((obs, wasSelected, isNowSelected) -> 
-                System.out.println(1)
-            );
-				return observable;
-			}
-		}));
+		//Set up review scene
 		
+		TextArea reviewPane = new TextArea();
+		reviewPane.setEditable(false);
+		reviewPane.setText("Test");
 		
-		Button button1 = new Button("Settings");
-		button1.setOnAction(e -> primaryStage.setScene(settingsScene));
+		HBox surpriseGradePanel = new HBox();
+		Label surpriseGradePanelLabel = new Label("Surprise: ");
+		ToggleGroup surprisePanelGroup = new ToggleGroup();
+		ToggleButton surprise1 = new ToggleButton("0");
+		surprise1.setToggleGroup(surprisePanelGroup);
+		ToggleButton surprise2 = new ToggleButton("1");
+		surprise2.setToggleGroup(surprisePanelGroup);
+		ToggleButton surprise3 = new ToggleButton("2");
+		surprise3.setToggleGroup(surprisePanelGroup);
+		ToggleButton surprise4 = new ToggleButton("3");
+		surprise4.setToggleGroup(surprisePanelGroup);
+		ToggleButton surprise5 = new ToggleButton("4");
+		surprise5.setToggleGroup(surprisePanelGroup);
+		ToggleButton surprise6 = new ToggleButton("5");
+		surprise6.setToggleGroup(surprisePanelGroup);
+		surpriseGradePanel.getChildren().addAll(
+				surpriseGradePanelLabel,
+				surprise1,surprise2,surprise3,
+				surprise4,surprise5,surprise6);
+		
+		HBox goodIdeaGradePanel = new HBox();
+		Label goodIdeaGradePanelLabel = new Label("Good Idea: ");
+		ToggleGroup goodIdeaPanelGroup = new ToggleGroup();
+		ToggleButton goodIdea1 = new ToggleButton("0");
+		goodIdea1.setToggleGroup(goodIdeaPanelGroup);
+		ToggleButton goodIdea2 = new ToggleButton("1");
+		goodIdea2.setToggleGroup(goodIdeaPanelGroup);
+		ToggleButton goodIdea3 = new ToggleButton("2");
+		goodIdea3.setToggleGroup(goodIdeaPanelGroup);
+		ToggleButton goodIdea4 = new ToggleButton("3");
+		goodIdea4.setToggleGroup(goodIdeaPanelGroup);
+		ToggleButton goodIdea5 = new ToggleButton("4");
+		goodIdea5.setToggleGroup(goodIdeaPanelGroup);
+		ToggleButton goodIdea6 = new ToggleButton("5");
+		goodIdea6.setToggleGroup(goodIdeaPanelGroup);
+		goodIdeaGradePanel.getChildren().addAll(
+				goodIdeaGradePanelLabel,
+				goodIdea1,goodIdea2,goodIdea3,
+				goodIdea4,goodIdea5,goodIdea6);
+		
+		HBox metaButtonPanel = new HBox(175);
+
+		Button doneReviewButton = new Button("Done");
+		
+		Button settingsButton = new Button("Settings");
+		settingsButton.setOnAction(e -> primaryStage.setScene(settingsScene));
+		settingsButton.setAlignment(Pos.BOTTOM_RIGHT);
+		
+		metaButtonPanel.getChildren().addAll(doneReviewButton, settingsButton);
+		
 		VBox layout1 = new VBox(20);
-		layout1.getChildren().addAll(listView,button1);
+		layout1.getChildren().addAll(
+				reviewPane, surpriseGradePanel, 
+				goodIdeaGradePanel, metaButtonPanel);
 		listScene = new Scene(layout1, 300, 250);
 		//Set up Scene 2
 		Label label2 = new Label("Settings");
@@ -81,10 +121,6 @@ public class Main extends Application {
 			@Override 
 			public void handle(ActionEvent e) {
 				System.out.println(howManyItemsInput.getText());
-				names.clear();
-				for (int i = 0; i < new Integer(howManyItemsInput.getText()); i++) {
-					names.add(testStrings.get(i));
-				}
 			}
 		});
 		
