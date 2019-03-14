@@ -16,22 +16,25 @@ public abstract class SM2Item implements Comparable<SM2Item> {
 	protected String ID;
     protected double interRepetitionInterval = 1; // Days between repetition in SM
     protected double easeFactor = 2.5;
-    protected int reviews; // Number of reviews performed
-    protected Date lastReviewDate;
-    protected Date nextReviewDate;
+    protected int reviews = 0; // Number of reviews performed
+    protected Date lastReviewDate = new Date();
+    protected Date nextReviewDate = new Date();
 
     @Override
     public abstract String toString();
     
     public abstract SM2Item deserializeItem(String itemString);
     
-    public abstract String serializeItem(SM2Item item);
+    public abstract String serializeItem();
     
     public boolean reviewNow() {
     	/*
     	 * Return whether it is currently time to review the SM Item
     	 */
     	Date currentDate = new Date();
+    	if (nextReviewDate == null) {
+    		return true;
+    	}
     	if (nextReviewDate.before(currentDate)) {
     		return true;
     	}
@@ -69,7 +72,7 @@ public abstract class SM2Item implements Comparable<SM2Item> {
 		
     }
     
-    private double calculateInterRepetitionInterval(int nthRepetition) {
+    protected double calculateInterRepetitionInterval(int nthRepetition) {
     	if (nthRepetition == 1) {
     		return 1;
     	}

@@ -1,5 +1,10 @@
 package application;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -27,12 +32,16 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Callback;
+import supermemo.IdeaItem;
 
 public class Main extends Application {
 
 	private Scene listScene;
 	private Scene newItemScene;
 	private Scene settingsScene;
+	private TextArea reviewPane = new TextArea();
+	private ArrayList<IdeaItem> ideas = new ArrayList<IdeaItem>();
+	private int ideaIndex = 0;
 	
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
@@ -45,10 +54,7 @@ public class Main extends Application {
 	try { 
 		primaryStage.setTitle("Stochastic ToDo List");
 		//Set up review scene
-		
-		TextArea reviewPane = new TextArea();
 		reviewPane.setEditable(false);
-		reviewPane.setText("Test");
 		
 		HBox surpriseGradePanel = new HBox();
 		Label surpriseGradePanelLabel = new Label("Surprise: ");
@@ -93,6 +99,14 @@ public class Main extends Application {
 		HBox metaButtonPanel = new HBox(175);
 
 		Button doneReviewButton = new Button("Done");
+		doneReviewButton.setOnAction(e -> 
+		{ try { ideaIndex++; 
+		  		reviewPane.setText(ideas.get(ideaIndex).toString()); }
+		  catch (IndexOutOfBoundsException exception) {
+			doneReviewButton.setDisable(true);
+			reviewPane.setText("[You have reviewed all the ideas in the \n queue for this session]");
+		  }
+		  });
 		
 		Button settingsButton = new Button("Settings");
 		settingsButton.setOnAction(e -> primaryStage.setScene(settingsScene));
@@ -131,6 +145,16 @@ public class Main extends Application {
 		// scene2.getStylesheets().add(getClass().getResource("application.css").toExternalForm());
 		// scene1.getStylesheets().add(getClass().getResource("application.css").toExternalForm());
 		primaryStage.setScene(listScene);
+		
+		BufferedReader inFileReader = new BufferedReader(new FileReader("ideas.tsv"));
+		String line;
+		IdeaItem deserializeIdeas = new IdeaItem("-1", "This should never appear in your ideas.tsv"); 
+		while ((line = inFileReader.readLine()) != null) {
+			this.ideas.add((IdeaItem) deserializeIdeas.deserializeItem(line));
+		}
+		
+		reviewPane.setText(ideas.get(ideaIndex).toString());
+		
 		primaryStage.show();
 		} 
 	catch(Exception e) {
@@ -138,4 +162,19 @@ public class Main extends Application {
 		}
 	}
 
+	@Override 
+	public void stop() {
+		try {
+			BufferedWriter outFileWriter = new BufferedWriter(new FileWriter("ideas.tsv"));
+			for (int i = 0; i < this.ideas.size(); i++) {
+				outFileWriter.write(ideas.get(i).serializeItem());
+			}
+			outFileWriter.flush();
+			outFileWriter.close();
+		}
+		catch (IOException e) {
+			System.out.println("Couldn't write the ideas file...");
+			e.printStackTrace();
+		}
+	}
 }
