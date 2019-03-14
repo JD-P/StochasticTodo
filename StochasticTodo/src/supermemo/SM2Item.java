@@ -1,5 +1,6 @@
 package supermemo;
 
+import java.util.Comparator;
 import java.util.Date;
 
 /*
@@ -11,12 +12,20 @@ import java.util.Date;
  * we should show our 
  */
 
-public abstract class SM2Item {
-    private double interRepetitionInterval = 1; // Days between repetition in SM
-    private double easeFactor = 2.5;
-    private Date lastReviewDate;
-    private Date nextReviewDate;
+public abstract class SM2Item implements Comparable<SM2Item> {
+	protected String ID;
+    protected double interRepetitionInterval = 1; // Days between repetition in SM
+    protected double easeFactor = 2.5;
+    protected int reviews; // Number of reviews performed
+    protected Date lastReviewDate;
+    protected Date nextReviewDate;
 
+    @Override
+    public abstract String toString();
+    
+    public abstract SM2Item deserializeItem(String itemString);
+    
+    public abstract String serializeItem(SM2Item item);
     
     public boolean reviewNow() {
     	/*
@@ -30,6 +39,26 @@ public abstract class SM2Item {
     		return false;
     	}
     }
+    
+    public void reviewed(int quality) {
+    	this.reviews++;
+    	this.updateEaseFactor(quality);
+    	this.updateInterRepetitionInterval(this.reviews);
+    	// TODO: Add history
+    	this.lastReviewDate = new Date();
+    	this.nextReviewDate = this.calculateNextReviewDate();
+    }
+    
+    @Override
+    public int compareTo(SM2Item item) {
+    	/*
+    	 * We compare items by their next review date
+    	 */
+    	return this.nextReviewDate.compareTo(item.nextReviewDate);
+    }
+    
+   
+    
     
     private void updateEaseFactor(int quality) {
 	this.easeFactor = this.easeFactor + (0.1 - (5-quality)
@@ -51,6 +80,12 @@ public abstract class SM2Item {
     		return calculateInterRepetitionInterval(nthRepetition - 1) 
     				* this.easeFactor; 
     	}
+    }
+    
+    private Date calculateNextReviewDate() {
+    	Date nextReviewDate = new Date();
+    	long newTime = nextReviewDate.getTime() + (long) (1000 * (60 * 60 * 24 * this.interRepetitionInterval));
+    	return new Date(newTime);
     }
     
     private void updateInterRepetitionInterval(int nthRepetition) {
