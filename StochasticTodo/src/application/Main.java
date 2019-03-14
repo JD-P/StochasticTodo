@@ -2,12 +2,16 @@ package application;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import javafx.animation.Animation;
+import javafx.animation.FadeTransition;
+import javafx.animation.Transition;
 import javafx.application.Application;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -28,17 +32,18 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.cell.CheckBoxListCell;
+import javafx.scene.layout.Background;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Callback;
+import javafx.util.Duration;
 import supermemo.IdeaItem;
 
 public class Main extends Application {
 
 	private Scene listScene;
-	private Scene newItemScene;
-	private Scene settingsScene;
+	private Scene addItemScene;
 	private TextArea reviewPane = new TextArea();
 	private ArrayList<IdeaItem> ideas = new ArrayList<IdeaItem>();
 	private int ideaIndex = 0;
@@ -55,6 +60,7 @@ public class Main extends Application {
 		primaryStage.setTitle("Stochastic ToDo List");
 		//Set up review scene
 		reviewPane.setEditable(false);
+		reviewPane.setWrapText(true);
 		
 		HBox surpriseGradePanel = new HBox();
 		Label surpriseGradePanelLabel = new Label("Surprise: ");
@@ -99,6 +105,7 @@ public class Main extends Application {
 		HBox metaButtonPanel = new HBox(175);
 
 		Button doneReviewButton = new Button("Done");
+
 		doneReviewButton.setOnAction(e -> 
 		{ try { ideaIndex++; 
 		  		reviewPane.setText(ideas.get(ideaIndex).toString()); }
@@ -108,19 +115,21 @@ public class Main extends Application {
 		  }
 		  });
 		
-		Button settingsButton = new Button("Settings");
-		settingsButton.setOnAction(e -> primaryStage.setScene(settingsScene));
-		settingsButton.setAlignment(Pos.BOTTOM_RIGHT);
+		Button addItemButton = new Button("Add");
+		addItemButton.setOnAction(e -> primaryStage.setScene(addItemScene));
+		addItemButton.setAlignment(Pos.BOTTOM_RIGHT);
 		
-		metaButtonPanel.getChildren().addAll(doneReviewButton, settingsButton);
+		metaButtonPanel.getChildren().addAll(doneReviewButton, addItemButton);
 		
 		VBox layout1 = new VBox(20);
 		layout1.getChildren().addAll(
 				reviewPane, surpriseGradePanel, 
 				goodIdeaGradePanel, metaButtonPanel);
+		layout1.setStyle("-fx-background: #222222;");
 		listScene = new Scene(layout1, 300, 250);
-		//Set up Scene 2
-		Label label2 = new Label("Settings");
+		//Set up Settings scene
+		Label label2 = new Label("Add");
+		HBox saveButtonPanel = new HBox(50);
 		Button backToList = new Button("Back");
 		//move button 50 right
 		backToList.setTranslateX(50);
@@ -128,32 +137,68 @@ public class Main extends Application {
 		backToList.setTranslateY(50);
 		backToList.setOnAction(e -> primaryStage.setScene(listScene));
 		
-		Label howManyItemsLabel = new Label("How many items to display:");
-		TextField howManyItemsInput = new TextField();
-		Button settingsSave = new Button("Save");
-		settingsSave.setOnAction( new EventHandler<ActionEvent>() {
+		TextField ideaTextInput = new TextField();
+		ideaTextInput.setPromptText("Your idea reminder here");
+		Button addItemSave = new Button("Save");
+		
+		VBox layout2 = new VBox(20);
+
+		addItemSave.setOnAction( new EventHandler<ActionEvent>() {
 			@Override 
 			public void handle(ActionEvent e) {
-				System.out.println(howManyItemsInput.getText());
+				String sanitizedIdeaText = ideaTextInput.getText().replace("\n",""); // Prevent parsing issues
+				sanitizedIdeaText = sanitizedIdeaText.replace("\t", "    ");
+				ideas.add(new IdeaItem(((Integer) ideas.size()).toString(), ideaTextInput.getText()));
+
+				// This page helped: https://docs.oracle.com/javafx/2/api/javafx/animation/Transition.html
+				Animation savingTextBar = new Transition() {
+					{
+						setCycleDuration(Duration.millis(500));
+						setOnFinished(e -> 
+						{ideaTextInput.clear(); 
+						ideaTextInput.setEditable(true); 
+						addItemSave.setDisable(false);});
+					}
+					
+					@Override
+					protected void interpolate(double frac) {
+						ideaTextInput.setText("Saving...");
+						ideaTextInput.setEditable(false);
+						addItemSave.setDisable(true);
+					}
+					
+				};
+				savingTextBar.play();
+				// Update in case this is the first insert and we can read items now
+				reviewPane.setText(ideas.get(ideaIndex).toString());
 			}
 		});
 		
-		VBox layout2 = new VBox(20);
-		layout2.setStyle("-fx-background:  #DFFDFF;");
-		layout2.getChildren().addAll(label2, howManyItemsLabel, howManyItemsInput, settingsSave, backToList);
-		settingsScene = new Scene(layout2, 300, 250);
+		saveButtonPanel.getChildren().addAll(backToList, addItemSave);
+		
+		layout2.getChildren().addAll(label2, ideaTextInput, saveButtonPanel);
+		layout2.setStyle("-fx-background: #222222");
+		addItemScene = new Scene(layout2, 300, 250);
 		// scene2.getStylesheets().add(getClass().getResource("application.css").toExternalForm());
 		// scene1.getStylesheets().add(getClass().getResource("application.css").toExternalForm());
 		primaryStage.setScene(listScene);
 		
-		BufferedReader inFileReader = new BufferedReader(new FileReader("ideas.tsv"));
-		String line;
-		IdeaItem deserializeIdeas = new IdeaItem("-1", "This should never appear in your ideas.tsv"); 
-		while ((line = inFileReader.readLine()) != null) {
-			this.ideas.add((IdeaItem) deserializeIdeas.deserializeItem(line));
+		try {
+			BufferedReader inFileReader = new BufferedReader(new FileReader("ideas.tsv"));
+			String line;
+			IdeaItem deserializeIdeas = new IdeaItem("-1", "This should never appear in your ideas.tsv"); 
+			while ((line = inFileReader.readLine()) != null) {
+				this.ideas.add((IdeaItem) deserializeIdeas.deserializeItem(line));
+				
+			}
+			reviewPane.setText(ideas.get(ideaIndex).toString());
 		}
+		catch (FileNotFoundException e) {
+			reviewPane.setText("[You currently have no ideas added to \n the database]");
+		}
+
 		
-		reviewPane.setText(ideas.get(ideaIndex).toString());
+		
 		
 		primaryStage.show();
 		} 
